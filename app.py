@@ -3,19 +3,18 @@ import streamlit as st
 from groq import Groq
 
 # ----------------- API Key -----------------
-# First, check environment variable (works locally)
-api_key = os.environ.get("GROQ_API_KEY")
+api_key = os.environ.get("GROQ_API_KEY")  # Local environment variable
 
-# If running on Streamlit Cloud, fallback to st.secrets
+# Fallback to Streamlit Secrets if available
 try:
     if not api_key:
         api_key = st.secrets["GROQ_API_KEY"]
 except Exception:
     pass
 
-# If still not found, fallback to hardcoded key (local testing only)
+# Hardcoded key for local testing only (remove for production)
 if not api_key:
-    api_key = "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"  # ONLY FOR LOCAL TESTING
+    api_key = "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"
 
 client = Groq(api_key=api_key)
 
@@ -44,18 +43,19 @@ make_bullets = st.checkbox("• Convert long paragraphs into concise bullet poin
 
 # ----------------- Tone Instructions -----------------
 tone_instructions = {
-    "Formal": "Use proper and context fitting salutations (e.g., 'Dear [Name]'), professional vocabulary, complete sentences, and polite closing (e.g., 'Best regards').",
+    "Formal": "Use proper salutations (e.g., 'Dear [Name]'), professional vocabulary, complete sentences, and polite closing (e.g., 'Best regards').",
     "Friendly": "Use casual but polite wording, approachable tone, contractions allowed, friendly greetings and closing.",
     "Persuasive": "Use convincing, confident, and motivating language, highlight benefits, encourage action politely.",
     "Apologetic": "Express regret sincerely, polite and empathetic wording, clear acknowledgment of the issue.",
     "Enthusiastic": "Use energetic and positive language, express enthusiasm and excitement, friendly greetings, and upbeat closing."
 }
 
-# ----------------- Improve Email Action -----------------
+# ----------------- Session State -----------------
 state_key = "improved_email_text"
 if state_key not in st.session_state:
     st.session_state[state_key] = ""
 
+# ----------------- Improve Email -----------------
 if st.button("✨ Improve Email Tone"):
     if not email_text.strip():
         st.warning("⚠️ Please paste an email first.")
@@ -84,18 +84,22 @@ Do not change the meaning of the email.
                 improved_email = response.choices[0].message.content.strip()
                 st.session_state[state_key] = improved_email
 
-                st.subheader("✨ Improved Email")
-                st.markdown(f"<div class='result-box'>{improved_email}</div>", unsafe_allow_html=True)
-
-                st.download_button(
-                    label="📥 Download .txt",
-                    data=improved_email,
-                    file_name="improved_email.txt",
-                    mime="text/plain"
-                )
-
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
+# ----------------- Display & Download -----------------
+improved_email = st.session_state.get(state_key, "")
+
+if improved_email:
+    st.subheader("✨ Improved Email")
+    st.markdown(f"<div class='result-box'>{improved_email}</div>", unsafe_allow_html=True)
+
+    st.download_button(
+        label="📥 Download .txt",
+        data=improved_email,
+        file_name="improved_email.txt",
+        mime="text/plain"
+    )
 
 # ----------------- Watermark -----------------
 st.markdown("<div class='watermark'>Developed by Abhijnan Raj</div>", unsafe_allow_html=True)
