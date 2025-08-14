@@ -43,7 +43,7 @@ make_bullets = st.checkbox("• Convert long paragraphs into concise bullet poin
 
 # ----------------- Tone Instructions -----------------
 tone_instructions = {
-    "Formal": "Use proper salutations (e.g., 'Dear [Name]'), professional vocabulary, complete sentences, and polite closing (e.g., 'Best regards').",
+    "Formal": "Use proper salutations (e.g., 'Dear [Name]'),very professional vocabulary, complete sentences, and polite and formal closing (e.g., 'Best regards').",
     "Friendly": "Use casual but polite wording, approachable tone, contractions allowed, friendly greetings and closing.",
     "Persuasive": "Use convincing, confident, and motivating language, highlight benefits, encourage action politely.",
     "Apologetic": "Express regret sincerely, polite and empathetic wording, clear acknowledgment of the issue.",
