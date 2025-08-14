@@ -1,12 +1,23 @@
 import os
 import streamlit as st
-import pyperclip
 from groq import Groq
 
 # ----------------- API Key -----------------
-# Replace with your Groq API key
-os.environ["GROQ_API_KEY"] = "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"
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+# First, check environment variable (works locally)
+api_key = os.environ.get("GROQ_API_KEY")
+
+# If running on Streamlit Cloud, fallback to st.secrets
+try:
+    if not api_key:
+        api_key = st.secrets["GROQ_API_KEY"]
+except Exception:
+    pass
+
+# If still not found, fallback to hardcoded key (local testing only)
+if not api_key:
+    api_key = "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"  # ONLY FOR LOCAL TESTING
+
+client = Groq(api_key=api_key)
 
 # ----------------- Page Config -----------------
 st.set_page_config(page_title="Email Tone Improviser", page_icon="📧", layout="centered")
@@ -40,72 +51,51 @@ tone_instructions = {
     "Enthusiastic": "Use energetic and positive language, express enthusiasm and excitement, friendly greetings, and upbeat closing."
 }
 
-# ----------------- Columns for Buttons -----------------
-col_run, col_copy, col_dl = st.columns([1, 1, 1])
-
-# Placeholder for output
-result_box = st.empty()
+# ----------------- Improve Email Action -----------------
 state_key = "improved_email_text"
 if state_key not in st.session_state:
     st.session_state[state_key] = ""
 
-# ----------------- Improve Email Action -----------------
-with col_run:
-    if st.button("✨ Improve Email Tone"):
-        if not email_text.strip():
-            st.warning("⚠️ Please paste an email first.")
-        else:
-            with st.spinner("Improvising your email tone…"):
-                # System prompt with strict tone enforcement
-                system_prompt = f"""
+if st.button("✨ Improve Email Tone"):
+    if not email_text.strip():
+        st.warning("⚠️ Please paste an email first.")
+    else:
+        with st.spinner("Improvising your email tone…"):
+            system_prompt = f"""
 You are an expert email editor.
 Rewrite the given email strictly according to the selected tone: {tone}.
 Instruction: {tone_instructions[tone]}
 Do not change the meaning of the email.
 """
-                if make_bullets:
-                    system_prompt += " Convert long paragraphs into short, scannable bullet points where appropriate."
+            if make_bullets:
+                system_prompt += " Convert long paragraphs into short, scannable bullet points where appropriate."
 
-                try:
-                    response = client.chat.completions.create(
-                        model="llama-3.1-8b-instant",  # faster model
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": email_text}
-                        ],
-                        max_tokens=400,
-                        temperature=0.4
-                    )
+            try:
+                response = client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": email_text}
+                    ],
+                    max_tokens=400,
+                    temperature=0.4
+                )
 
-                    improved_email = response.choices[0].message.content.strip()
-                    st.session_state[state_key] = improved_email
+                improved_email = response.choices[0].message.content.strip()
+                st.session_state[state_key] = improved_email
 
-                    result_box.markdown("#### ✨ Improved Email")
-                    result_box.markdown(f"<div class='result-box'>{improved_email}</div>", unsafe_allow_html=True)
+                st.subheader("✨ Improved Email")
+                st.markdown(f"<div class='result-box'>{improved_email}</div>", unsafe_allow_html=True)
 
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
+                st.download_button(
+                    label="📥 Download .txt",
+                    data=improved_email,
+                    file_name="improved_email.txt",
+                    mime="text/plain"
+                )
 
-# ----------------- Copy to Clipboard -----------------
-with col_copy:
-    if st.button("📋 Copy to Clipboard"):
-        improved_email = st.session_state.get(state_key, "")
-        if not improved_email:
-            st.warning("Nothing to copy yet. Generate an improved email first.")
-        else:
-            pyperclip.copy(improved_email)
-            st.success("📋 Improved email copied to clipboard!")
-
-# ----------------- Download as .txt -----------------
-with col_dl:
-    improved_email = st.session_state.get(state_key, "")
-    st.download_button(
-        label="📥 Download .txt",
-        data=improved_email if improved_email else "",
-        file_name="improved_email.txt",
-        disabled=(improved_email == ""),
-        help="Generate the email first, then download."
-    )
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
 
 # ----------------- Watermark -----------------
 st.markdown("<div class='watermark'>Developed by Abhijnan Raj</div>", unsafe_allow_html=True)
